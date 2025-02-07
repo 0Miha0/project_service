@@ -47,4 +47,15 @@ public class StageValidatorTest {
 
         assertEquals("Value cannot be empty", exception.getMessage());
     }
+
+    @Test
+    @DisplayName("Validation on null and empty list")
+    public void validationOnNullOrEmptyListTest() {
+        List<String> nullList = List.of();
+
+        DataValidationException exception = assertThrows(DataValidationException.class,
+                () -> stageValidator.validationOnNullOrEmptyList(nullList, "List cannot be null or empty"));
+
+        assertEquals("List cannot be null or empty", exception.getMessage());
+    }
 }
