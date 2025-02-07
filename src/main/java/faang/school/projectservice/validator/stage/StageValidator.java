@@ -32,7 +32,6 @@ public class StageValidator {
         }
     }
 
-
     public  <T> void validationOnNullOrEmptyList(List<T> list, String message) {
         if (list == null || list.isEmpty()) {
             log.warn(message);
