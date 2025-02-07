@@ -3,6 +3,7 @@ package faang.school.projectservice.model;
 import java.util.List;
 
 public enum TeamRole {
+    TEAMLEAD,
     OWNER,
     MANAGER,
     DEVELOPER,
