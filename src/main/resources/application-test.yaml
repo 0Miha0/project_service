@@ -1,2 +1,54 @@
-calculations_messages_processing:
-  enabled: false
+spring:
+  mvc:
+    servlet:
+      path: /api/v1
+  datasource:
+    url: jdbc:tc:postgresql:15:///test
+    driver-class-name: org.postgresql.Driver
+    username: test
+    password: test
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-test.yaml
+    enabled: true
+  data:
+    redis:
+      port: 6379
+      host: localhost
+      channel:
+        project: project_channel
+        calculations_channel:
+          name: calculations_channel
+        calculations_messages_processing:
+          enabled: false
+
+services:
+  s3:
+    endpoint: http://127.0.0.1:9000
+    accessKey: user
+    secretKey: password
+    bucketName: projectbucket
+    region: us-east-1
+    isMocked: false
+  jira:
+    protocol: https
+    host: atlassian.net
+    api-path: /rest/api/2
+    endpoints:
+      issue: /issue
+      issue-link: /issueLink
+      search: /search
+
+  payment-service:
+    host: http://localhost
+    port: 9080
+  user-service:
+    host: http://localhost
+    port: 8080
+    path: /api/v1
+
+project-files:
+  max-project-file-size: 2147483648
