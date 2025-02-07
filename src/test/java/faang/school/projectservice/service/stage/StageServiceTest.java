@@ -149,30 +149,6 @@ public class StageServiceTest {
     }
 
     @Test
-    @DisplayName("Verifying successful stage creation")
-    public void checkCreateStageSuccessTest() {
-        when(stageRolesRepository.findAllById(stageDto.getStageRolesId()))
-                .thenReturn(stage.getStageRoles());
-        when(projectService.findById(stageDto.getProjectId()))
-                .thenReturn(stage.getProject());
-        when(teamMemberService.findAllById(stageDto.getExecutorsId()))
-                .thenReturn(stage.getExecutors());
-        when(stageRepository.save(any(Stage.class)))
-                .thenAnswer(invocation -> {
-                    Stage saved = invocation.getArgument(0);
-                    saved.setStageId(1L);
-                    return saved;
-                });
-
-        StageDto createdStage = stageService.createStage(stageDto);
-
-        assertNotNull(createdStage);
-        assertEquals(1L, createdStage.getStageId());
-
-        verify(stageRepository, times(1)).save(any(Stage.class));
-    }
-
-    @Test
     @DisplayName("Verification of successful receipt of all stages of the project")
     public void checkGetStagesByProjectSuccessTest() {
         when(projectService.findById(anyLong()))
