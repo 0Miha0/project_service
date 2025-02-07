@@ -39,13 +39,4 @@ public class StageValidator {
             throw new DataValidationException(message);
         }
     }
-
-    public void validateDifferentStages(Stage sourceStage, Stage transferStage, String message) {
-        log.debug("Validating that source and transfer stages are different");
-        if (sourceStage.getStageId().equals(transferStage.getStageId())) {
-            log.error("Source and transfer stages are the same. Source ID: {}, Transfer ID: {}",
-                    sourceStage.getStageId(), transferStage.getStageId());
-            throw new DataValidationException(message);
-        }
-    }
 }
