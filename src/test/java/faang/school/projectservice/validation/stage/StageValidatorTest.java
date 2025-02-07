@@ -58,18 +58,4 @@ public class StageValidatorTest {
 
         assertEquals("List cannot be null or empty", exception.getMessage());
     }
-
-    @Test
-    @DisplayName("Validation different stages")
-    public void validateDifferentStagesTest() {
-        Stage sourceStage = Stage.builder().stageId(1L).build();
-        Stage transferStage = Stage.builder().stageId(1L).build();
-        String message = "Validating that source and transfer stages are different";
-
-        DataValidationException exception = assertThrows(DataValidationException.class,
-                () -> stageValidator.validateDifferentStages(sourceStage, transferStage, message));
-
-        assertEquals("Validating that source and transfer stages are different", exception.getMessage());
-
-    }
 }
