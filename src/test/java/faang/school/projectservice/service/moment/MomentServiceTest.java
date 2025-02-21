@@ -12,7 +12,7 @@ import faang.school.projectservice.model.Project;
 import faang.school.projectservice.model.ProjectStatus;
 import faang.school.projectservice.repository.MomentRepository;
 import faang.school.projectservice.service.MomentService;
-import faang.school.projectservice.service.ProjectService;
+import faang.school.projectservice.service.project.ProjectService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

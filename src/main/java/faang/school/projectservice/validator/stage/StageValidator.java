@@ -1,7 +1,6 @@
 package faang.school.projectservice.validator.stage;
 
-import faang.school.projectservice.exception.DataValidationException;
-import faang.school.projectservice.model.stage.Stage;
+import faang.school.projectservice.exception.customexception.DataValidationException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
