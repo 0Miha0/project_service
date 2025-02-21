@@ -2,6 +2,7 @@ package faang.school.projectservice.mapper.project;
 
 import faang.school.projectservice.dto.project.ProjectCreateDto;
 import faang.school.projectservice.dto.project.ProjectDto;
+import faang.school.projectservice.dto.project.ProjectUpdateDto;
 import faang.school.projectservice.model.Project;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
@@ -18,5 +19,5 @@ public interface ProjectMapper {
 
     Project toEntity(ProjectDto dto);
 
-    ProjectDto toDto(Project entity);
+    ProjectUpdateDto toDto(Project entity);
 }

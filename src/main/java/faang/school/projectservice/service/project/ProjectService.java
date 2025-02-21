@@ -1,10 +1,10 @@
-package faang.school.projectservice.service;
+package faang.school.projectservice.service.project;
 
 import faang.school.projectservice.dto.project.ProjectCreateDto;
 import faang.school.projectservice.dto.project.ProjectDto;
 import faang.school.projectservice.dto.project.ProjectFilterDto;
 import faang.school.projectservice.dto.project.ProjectUpdateDto;
-import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.exception.customexception.DataValidationException;
 import faang.school.projectservice.filter.Filter;
 import faang.school.projectservice.mapper.project.ProjectMapper;
 import faang.school.projectservice.model.Project;
@@ -14,9 +14,11 @@ import faang.school.projectservice.repository.ProjectRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigInteger;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,6 +28,9 @@ import java.util.stream.Stream;
 @Service
 @RequiredArgsConstructor
 public class ProjectService {
+
+    @Value("${project-files.max-project-storage-size}")
+    private long maxProjectStorageSize;
 
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
@@ -37,6 +42,7 @@ public class ProjectService {
         Project project = projectMapper.toCreateEntity(dto);
         project.setOwnerId(userId);
         project.setStatus(ProjectStatus.CREATED);
+        project.setMaxStorageSize(new BigInteger(String.valueOf(maxProjectStorageSize)));
         save(project);
         log.info("Project created successfully: {}", dto.getName());
     }
@@ -53,8 +59,8 @@ public class ProjectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProjectDto> findAllProjects(ProjectFilterDto filters, Long userId) {
-        List<ProjectDto> projects = projectRepository.findAll().stream()
+    public List<ProjectUpdateDto> findAllProjects(ProjectFilterDto filters, Long userId) {
+        List<ProjectUpdateDto> projects = projectRepository.findAll().stream()
                 .filter(project -> isProjectVisibleForUser(project, userId))
                 .flatMap(project -> applyFilters(project, filters))
                 .distinct()
@@ -65,7 +71,7 @@ public class ProjectService {
     }
 
     @Transactional
-    public ProjectDto findProjectById(Long projectId) {
+    public ProjectUpdateDto findProjectById(Long projectId) {
         log.info("Finding project by id: {}", projectId);
         return projectMapper.toDto(findById(projectId));
     }

@@ -1,6 +1,6 @@
 package faang.school.projectservice.validation.stage_invitation;
 
-import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.exception.customexception.DataValidationException;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.stage_invitation.StageInvitation;
 import faang.school.projectservice.validator.stage_invitation.StageInvitationValidator;
