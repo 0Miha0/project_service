@@ -1,10 +1,10 @@
-package faang.school.projectservice.controller;
+package faang.school.projectservice.controller.project;
 
 import faang.school.projectservice.dto.project.ProjectCreateDto;
 import faang.school.projectservice.dto.project.ProjectDto;
 import faang.school.projectservice.dto.project.ProjectFilterDto;
 import faang.school.projectservice.dto.project.ProjectUpdateDto;
-import faang.school.projectservice.service.ProjectService;
+import faang.school.projectservice.service.project.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,7 +19,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -51,7 +53,7 @@ public class ProjectController {
     @Operation(summary = "Delete a project",
             description = "Soft deletes a project by setting its status to DELETED.")
     @PostMapping("/filter")
-    public ResponseEntity<List<ProjectDto>> findAllProjects(@RequestBody @Valid ProjectFilterDto filters,
+    public ResponseEntity<List<ProjectUpdateDto>> findAllProjects(@RequestBody @Valid ProjectFilterDto filters,
                                             @Parameter(description = "User ID of the requester. " +
                                                     "Must be a positive number.")
                                             @RequestHeader("x-user-id") @Positive Long userId) {
@@ -61,7 +63,7 @@ public class ProjectController {
     @Operation(summary = "Get project details",
             description = "Fetches the project details based on the project ID.")
     @GetMapping("/{projectId}")
-    public ResponseEntity<ProjectDto> findProjectById(@PathVariable Long projectId) {
+    public ResponseEntity<ProjectUpdateDto> findProjectById(@PathVariable Long projectId) {
         return ResponseEntity.ok(projectService.findProjectById(projectId));
     }
 }

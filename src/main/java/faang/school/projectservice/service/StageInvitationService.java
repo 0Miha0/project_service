@@ -3,7 +3,7 @@ package faang.school.projectservice.service;
 import faang.school.projectservice.dto.stage_invitation.StageInvitationDto;
 import faang.school.projectservice.dto.stage_invitation.StageInvitationFilterDto;
 import faang.school.projectservice.dto.stage_invitation.StageInvitationRejectDto;
-import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.exception.customexception.DataValidationException;
 import faang.school.projectservice.filter.Filter;
 import faang.school.projectservice.mapper.stage_invitation.StageInvitationMapper;
 import faang.school.projectservice.model.TeamMember;

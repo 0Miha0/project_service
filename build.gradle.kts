@@ -37,6 +37,7 @@ dependencies {
      * Amazon S3
      */
     implementation("com.amazonaws:aws-java-sdk-s3:1.12.481")
+    implementation("io.minio:minio:8.3.0")
 
     /**
      * Utils & Logging
@@ -49,6 +50,7 @@ dependencies {
     implementation("org.mapstruct:mapstruct:1.5.3.Final")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.3.Final")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
+    implementation ("net.coobird:thumbnailator:0.4.1")
 
     /**
      * Test containers

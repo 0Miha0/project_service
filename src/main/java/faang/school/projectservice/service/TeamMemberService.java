@@ -6,7 +6,7 @@ import faang.school.projectservice.dto.client.UserDto;
 import faang.school.projectservice.dto.team_member.TeamMemberDto;
 import faang.school.projectservice.dto.team_member.TeamMemberFilterDto;
 import faang.school.projectservice.dto.team_member.TeamMemberUpdateDto;
-import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.exception.customexception.DataValidationException;
 import faang.school.projectservice.filter.Filter;
 import faang.school.projectservice.mapper.team_member.TeamMemberMapper;
 import faang.school.projectservice.model.Project;
@@ -14,6 +14,7 @@ import faang.school.projectservice.model.Team;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
 import faang.school.projectservice.repository.TeamMemberRepository;
+import faang.school.projectservice.service.project.ProjectService;
 import faang.school.projectservice.validator.team_member.TeamMemberValidator;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -203,6 +204,11 @@ public class TeamMemberService {
         return teamMemberMapper.toDto(savedMember);
     }
 
+    public List<TeamRole> getTeamMemberRole(Long teamMemberId) {
+        log.info("Retrieving team member roles for ID: {}", teamMemberId);
+        return teamMemberRepository.findUserRolesByUserId(teamMemberId);
+    }
+
     public TeamMember findById(long id) {
         return teamMemberRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Team member not found"));
@@ -212,12 +218,10 @@ public class TeamMemberService {
         return teamMemberRepository.findAllById(id);
     }
 
-    @Transactional
     public TeamMember save(TeamMember teamMember) {
         return teamMemberRepository.save(teamMember);
     }
 
-    @Transactional
     public List<TeamMember> saveAll(List<TeamMember> teamMembers) {
         return teamMemberRepository.saveAll(teamMembers);
     }
@@ -234,17 +238,14 @@ public class TeamMemberService {
         return teamMemberRepository.findAll();
     }
 
-    @Transactional
     public void deleteById(long id) {
         teamMemberRepository.deleteById(id);
     }
 
-    @Transactional
     public void delete(TeamMember teamMember) {
         teamMemberRepository.delete(teamMember);
     }
 
-    @Transactional
     public void deleteAll(List<TeamMember> teamMembers) {
         teamMemberRepository.deleteAll(teamMembers);
     }

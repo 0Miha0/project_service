@@ -2,6 +2,9 @@ spring:
   mvc:
     servlet:
       path: /api/v1
+  servlet:
+    multipart:
+      max-file-size: 10GB
   datasource:
     driver-class-name: org.postgresql.Driver
     url: jdbc:postgresql://localhost:5432/postgres
@@ -43,7 +46,8 @@ services:
     endpoint: http://localhost:9000
     accessKey: user
     secretKey: password
-    bucketName: projectbucket
+    bucketName: corpbucket
+    region: us-east-1
     isMocked: false
   payment-service:
     host: http://localhost
@@ -51,3 +55,14 @@ services:
   user-service:
     host: http://localhost
     port: 8080
+
+minio:
+  endpoint: http://127.0.0.1:9000
+  accessKey: user
+  secretKey: password
+  bucketName: corpbucket
+
+project-files:
+  max-project-storage-size: 10737418240
+  max-project-file-size: 2147483648
+  max-project-image-size: 5242880

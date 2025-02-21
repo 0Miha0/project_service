@@ -16,6 +16,7 @@ import faang.school.projectservice.model.Team;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
 import faang.school.projectservice.repository.InternshipRepository;
+import faang.school.projectservice.service.project.ProjectService;
 import faang.school.projectservice.validator.internship.InternshipValidator;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
