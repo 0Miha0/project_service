@@ -1,7 +1,6 @@
 package faang.school.projectservice.service.project;
 
 import faang.school.projectservice.dto.project.ProjectCreateDto;
-import faang.school.projectservice.dto.project.ProjectDto;
 import faang.school.projectservice.dto.project.ProjectFilterDto;
 import faang.school.projectservice.dto.project.ProjectUpdateDto;
 import faang.school.projectservice.exception.customexception.DataValidationException;
@@ -92,6 +91,11 @@ public class ProjectService {
     public List<Project> findProjectsByIds(List<Long> projectIds) {
         log.info("Finding projects by ids: {}", projectIds);
         return projectRepository.findAllById(projectIds);
+    }
+
+    public Project findByIdWithResources(Long projectId) {
+        log.info("Finding project by id (including resources) with id: {}", projectId);
+        return projectRepository.findByIdWithResources(projectId);
     }
 
     private boolean isProjectVisibleForUser(Project project, Long userId) {

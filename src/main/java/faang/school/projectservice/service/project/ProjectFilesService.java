@@ -8,20 +8,17 @@ import faang.school.projectservice.model.ResourceStatus;
 import faang.school.projectservice.model.ResourceType;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
-import faang.school.projectservice.repository.ProjectRepository;
+import faang.school.projectservice.service.TeamMemberService;
 import faang.school.projectservice.service.amazon_client.AmazonClientService;
 import faang.school.projectservice.service.resource.ResourceService;
-import faang.school.projectservice.service.TeamMemberService;
 import faang.school.projectservice.validator.resource.ResourceValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +34,6 @@ public class ProjectFilesService {
     private final ProjectService projectService;
     private final ProjectMapper projectMapper;
     private final TeamMemberService teamMemberService;
-    private final ProjectRepository projectRepository;
 
     public void uploadFile(Long projectId, Long teamMemberId, MultipartFile file) {
         log.info("Uploading file: {} to project with ID: {}", file.getOriginalFilename(), projectId);
@@ -87,7 +83,7 @@ public class ProjectFilesService {
 
     public Map<String, InputStream> downloadAllFiles(Long projectId) {
         log.info("Downloading all files from project with ID: {}", projectId);
-        Project project = projectRepository.findByIdWithResources(projectId);
+        Project project = projectService.findByIdWithResources(projectId);
 
         Map<String, String> filesNamesWithKeys = new HashMap<>();
         project.getResources().stream()

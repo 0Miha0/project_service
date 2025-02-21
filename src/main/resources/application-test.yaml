@@ -51,4 +51,5 @@ services:
     path: /api/v1
 
 project-files:
+  max-project-storage-size: 10737418240
   max-project-file-size: 2147483648

@@ -127,9 +127,15 @@ class ProjectFilesServiceTest {
         long resourceId = 1L;
         String key = "key";
         String mockFileContent = "This is a test";
+        Project project = Project.builder()
+                .id(1L)
+                .name("name")
+                .description("description")
+                .build();
         Resource resource = Resource.builder()
                 .key(key)
                 .id(resourceId)
+                .project(project)
                 .build();
         ByteArrayInputStream mockInputStream = new ByteArrayInputStream(mockFileContent.getBytes());
         S3ObjectInputStream s3ObjectInputStream = new S3ObjectInputStream(mockInputStream, null);
@@ -198,7 +204,7 @@ class ProjectFilesServiceTest {
         namesWithS3ObjectInputStreams.put(name1, s3ObjectInputStream1);
         namesWithS3ObjectInputStreams.put(name3, s3ObjectInputStream3);
 
-        when(projectService.findById(projectId)).thenReturn(project);
+        when(projectService.findByIdWithResources(projectId)).thenReturn(project);
         when(amazonClientService.downloadAllFiles(filesNamesWithKeys)).thenReturn(namesWithS3ObjectInputStreams);
 
         Map<String, InputStream> result = projectFilesService.downloadAllFiles(projectId);
@@ -206,7 +212,7 @@ class ProjectFilesServiceTest {
         String resultContent1 = new String(result.get(name1).readAllBytes());
         String resultContent3 = new String(result.get(name3).readAllBytes());
 
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).findByIdWithResources(projectId);
         verify(amazonClientService, times(1)).downloadAllFiles(filesNamesWithKeys);
 
         assertNotNull(result);
