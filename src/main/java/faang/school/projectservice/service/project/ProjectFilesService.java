@@ -44,6 +44,8 @@ public class ProjectFilesService {
     @Value("${project-files.max-project-image-size}")
     private long maxProjectImageSize;
 
+    private static final int MAX_IMAGE_GALLERY = 50;
+
     private final AmazonClientService amazonClient;
     private final ResourceService resourceService;
     private final ResourceValidator resourceValidator;
@@ -145,7 +147,7 @@ public class ProjectFilesService {
     public void updateProjectCover(Long projectId, MultipartFile file) {
         projectValidator.nonvalizesLime(file.getSize(), maxProjectImageSize);
         Project project = projectService.findById(projectId);
-        String folder = projectId + project.getName();
+        String folder = projectId + project.getName() + "/cover";
         String key = amazonClient.uploadFile(file, folder);
         project.setCoverImageId(key);
         projectService.save(project);
@@ -243,6 +245,31 @@ public class ProjectFilesService {
 
         ByteArrayInputStream inputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
         return fileStreamingService.getStreamingResponseBody(inputStream);
+    }
+
+    public void addImageToProjectGallery(Long projectId, MultipartFile file) {
+        log.info("Adding image to project gallery for project ID: {}", projectId);
+        projectValidator.nonvalizesLime(file.getSize(), maxProjectImageSize);
+        Project project = projectService.findById(projectId);
+        projectValidator.gallerySizeValidate(project.getGalleryFileKeys().size(), MAX_IMAGE_GALLERY);
+        String folder = projectId + project.getName() + "/gallery";
+        String key = amazonClient.uploadFile(file, folder);
+        List<String> galleryFileKeys = project.getGalleryFileKeys();
+        galleryFileKeys.add(key);
+        project.setGalleryFileKeys(galleryFileKeys);
+        projectService.save(project);
+        log.info("Image added to project gallery for project ID: {}", projectId);
+    }
+
+    public void removeImageFromProjectGallery(Long projectId, String fileKey) {
+        log.info("Removing image from project gallery for project ID: {}", projectId);
+        Project project = projectService.findById(projectId);
+        List<String> galleryFileKeys = project.getGalleryFileKeys();
+        galleryFileKeys.removeIf(key -> key.equals(fileKey));
+        amazonClient.deleteFile(fileKey);
+        project.setGalleryFileKeys(galleryFileKeys);
+        projectService.save(project);
+        log.info("Image removed from project gallery for project ID: {}", projectId);
     }
 
     private float drawTable(PDPageContentStream contentStream, PDDocument document, float yStart, String title, String[] headers, List<String[]> rows) throws IOException {

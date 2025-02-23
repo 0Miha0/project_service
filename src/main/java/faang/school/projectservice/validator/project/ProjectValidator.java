@@ -14,4 +14,11 @@ public class ProjectValidator {
             throw new DataValidationException("The size of the image exceeds " + maxImageSize);
         }
     }
+
+    public void gallerySizeValidate(int size , int maxImage) {
+        if(size >= maxImage) {
+            log.warn("You have reached the gallery limit");
+            throw new DataValidationException("You have reached the gallery limit");
+        }
+    }
 }

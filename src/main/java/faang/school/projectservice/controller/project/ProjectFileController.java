@@ -163,6 +163,32 @@ public class ProjectFileController {
         return ResponseEntity.ok().body(projectFilesService.createProjectPresentation(projectId));
     }
 
+    @Operation(summary = "Add image to project gallery")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image added successfully"),
+            @ApiResponse(responseCode = "404", description = "Project or file not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred during processing")
+    })
+    @PostMapping("/{projectId}/gallery")
+    public ResponseEntity<Void> addImageToProjectGallery(@PathVariable Long projectId,
+                                                        @RequestParam(value = "file", required = false) MultipartFile file) {
+        projectFilesService.addImageToProjectGallery(projectId, file);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Remove image from project gallery")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Image removed successfully"),
+            @ApiResponse(responseCode = "404", description = "Project or file not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred during processing")
+    })
+    @DeleteMapping("/{projectId}/gallery/{fileKey}")
+    public ResponseEntity<Void> removeImageFromProjectGallery(@PathVariable Long projectId,
+                                                           @PathVariable String fileKey) {
+        projectFilesService.removeImageFromProjectGallery(projectId, fileKey);
+        return ResponseEntity.ok().build();
+    }
+
     private String getMimeType(Long resourceId) {
         Resource resource = resourceService.findById(resourceId);
         return URLConnection.guessContentTypeFromName(resource.getName());
