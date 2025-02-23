@@ -53,3 +53,4 @@ services:
 project-files:
   max-project-storage-size: 10737418240
   max-project-file-size: 2147483648
+  max-project-image-size: 5242880
