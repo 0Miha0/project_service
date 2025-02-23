@@ -51,6 +51,7 @@ dependencies {
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.3.Final")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0")
     implementation ("net.coobird:thumbnailator:0.4.1")
+    implementation("org.apache.pdfbox:pdfbox:2.0.24")
 
     /**
      * Test containers

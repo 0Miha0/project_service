@@ -140,11 +140,27 @@ public class ProjectFileController {
     }
 
     @Operation(summary = "Update Project Cover")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Cover updated successfully"),
+            @ApiResponse(responseCode = "404", description = "Project or file not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred during processing")
+    })
     @PutMapping("/{projectId}/cover")
     public ResponseEntity<Void> updateProjectCover(@PathVariable Long projectId,
                                                    @RequestParam(value = "file", required = false) MultipartFile file) {
         projectFilesService.updateProjectCover(projectId, file);
         return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Create PDF project presentation")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Presentation created successfully"),
+            @ApiResponse(responseCode = "404", description = "Project or files not found"),
+            @ApiResponse(responseCode = "500", description = "Internal server error occurred during processing")
+    })
+    @PostMapping("/{projectId}/presentation")
+    public ResponseEntity<StreamingResponseBody> createProjectPresentation(@PathVariable Long projectId) {
+        return ResponseEntity.ok().body(projectFilesService.createProjectPresentation(projectId));
     }
 
     private String getMimeType(Long resourceId) {
