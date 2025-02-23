@@ -6,20 +6,30 @@ import faang.school.projectservice.model.Project;
 import faang.school.projectservice.model.Resource;
 import faang.school.projectservice.model.ResourceStatus;
 import faang.school.projectservice.model.ResourceType;
+import faang.school.projectservice.model.TaskStatus;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
-import faang.school.projectservice.service.ImageService;
 import faang.school.projectservice.service.TeamMemberService;
 import faang.school.projectservice.service.amazon_client.AmazonClientService;
+import faang.school.projectservice.service.file_streaming.FileStreamingService;
 import faang.school.projectservice.service.resource.ResourceService;
 import faang.school.projectservice.validator.project.ProjectValidator;
 import faang.school.projectservice.validator.resource.ResourceValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.util.HashMap;
@@ -41,6 +51,7 @@ public class ProjectFilesService {
     private final ProjectMapper projectMapper;
     private final TeamMemberService teamMemberService;
     private final ProjectValidator projectValidator;
+    private final FileStreamingService fileStreamingService;
 
     public void uploadFile(Long projectId, Long teamMemberId, MultipartFile file) {
         log.info("Uploading file: {} to project with ID: {}", file.getOriginalFilename(), projectId);
@@ -138,6 +149,139 @@ public class ProjectFilesService {
         String key = amazonClient.uploadFile(file, folder);
         project.setCoverImageId(key);
         projectService.save(project);
+    }
+
+    public StreamingResponseBody createProjectPresentation(Long projectId) {
+        log.info("Creating project presentation for project ID: {}", projectId);
+        Project project = projectService.findById(projectId);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        PDDocument document = new PDDocument();
+        PDPageContentStream contentStream = null;
+        InputStream imageStream = null;
+
+        try {
+            PDPage page = new PDPage();
+            document.addPage(page);
+            contentStream = new PDPageContentStream(document, page);
+
+            float margin = 50;
+            float yStart = 750;
+            float width = page.getMediaBox().getWidth() - 2 * margin;
+            float currentY = yStart;
+
+            log.info("Downloading cover image for project ID: {}", projectId);
+            imageStream = amazonClient.downloadFile(project.getCoverImageId());
+            byte[] imageBytes = imageStream.readAllBytes();
+            PDImageXObject image = PDImageXObject.createFromByteArray(document, imageBytes, "project-cover-image");
+            float imageWidth = 150;
+            float imageHeight = 150;
+            contentStream.drawImage(image, margin, currentY - imageHeight, imageWidth, imageHeight);
+
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 14);
+            contentStream.newLineAtOffset(margin + imageWidth + 20, currentY - 20);
+            contentStream.showText("Title: " + project.getName());
+            contentStream.newLineAtOffset(0, -20);
+            contentStream.showText("The date of creation: " + project.getCreatedAt());
+            contentStream.newLineAtOffset(0, -20);
+            contentStream.showText("Status: " + project.getStatus());
+            contentStream.newLineAtOffset(0, -20);
+            contentStream.showText("Owner: " + teamMemberService.findById(project.getOwnerId()).getNickname());
+            contentStream.endText();
+
+            currentY -= imageHeight + 30;
+
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            contentStream.newLineAtOffset(margin, currentY);
+            contentStream.showText("Description: " + project.getDescription());
+            contentStream.endText();
+            currentY -= 40;
+
+            currentY = drawTable(contentStream, document, currentY, "Completed tasks", new String[]{"Task", "Data"},
+                    project.getTasks().stream()
+                            .filter(t -> t.getStatus().equals(TaskStatus.DONE))
+                            .map(t -> new String[]{t.getName(), t.getUpdatedAt().toString()}).toList());
+
+            currentY -= 50;
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA_BOLD, 14);
+            contentStream.newLineAtOffset(margin, currentY);
+            contentStream.showText("Project statistics:");
+            contentStream.endText();
+            currentY -= 20;
+
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            contentStream.newLineAtOffset(margin, currentY);
+            contentStream.showText("The number of tasks performed: " + project.getTasks().size());
+            contentStream.newLineAtOffset(0, -20);
+            contentStream.showText("The number of participants: " + project.getTeams().size());
+            contentStream.endText();
+
+            contentStream.close();
+            document.save(byteArrayOutputStream);
+            log.info("Project presentation created successfully for project ID: {}", projectId);
+        } catch (IOException e) {
+            log.error("Error creating project presentation for project ID: {}", projectId, e);
+            throw new RuntimeException("Failed to create project presentation", e);
+        } finally {
+            try {
+                if (contentStream != null) {
+                    contentStream.close();
+                }
+                if (document != null) {
+                    document.close();
+                }
+                if (imageStream != null) {
+                    imageStream.close();
+                }
+            } catch (IOException e) {
+                log.error("Error closing resources for project ID: {}", projectId, e);
+            }
+        }
+
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+        return fileStreamingService.getStreamingResponseBody(inputStream);
+    }
+
+    private float drawTable(PDPageContentStream contentStream, PDDocument document, float yStart, String title, String[] headers, List<String[]> rows) throws IOException {
+        log.info("Drawing table for project ID: {}", title);
+        float margin = 50;
+        float tableWidth = document.getPage(0).getMediaBox().getWidth() - 2 * margin;
+        float rowHeight = 20;
+        float yPosition = yStart - 30;
+
+        contentStream.beginText();
+        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 14);
+        contentStream.newLineAtOffset(margin, yPosition);
+        contentStream.showText(title);
+        contentStream.endText();
+        yPosition -= 20;
+
+        contentStream.setFont(PDType1Font.HELVETICA_BOLD, 12);
+        float[] columnWidths = {tableWidth / headers.length, tableWidth / headers.length, tableWidth / headers.length};
+
+        for (int i = 0; i < headers.length; i++) {
+            contentStream.beginText();
+            contentStream.newLineAtOffset(margin + (i * columnWidths[i]), yPosition);
+            contentStream.showText(headers[i]);
+            contentStream.endText();
+        }
+        yPosition -= rowHeight;
+
+        contentStream.setFont(PDType1Font.HELVETICA, 12);
+        for (String[] row : rows) {
+            for (int i = 0; i < row.length; i++) {
+                contentStream.beginText();
+                contentStream.newLineAtOffset(margin + (i * columnWidths[i]), yPosition);
+                contentStream.showText(row[i]);
+                contentStream.endText();
+            }
+            yPosition -= rowHeight;
+        }
+        log.info("Table drawn successfully for project ID: {}", title);
+        return yPosition;
     }
 
     private Project setZeroIfStorageSizeNull(Project project) {
