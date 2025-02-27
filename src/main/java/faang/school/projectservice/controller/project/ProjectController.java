@@ -4,6 +4,8 @@ import faang.school.projectservice.dto.project.ProjectCreateDto;
 import faang.school.projectservice.dto.project.ProjectDto;
 import faang.school.projectservice.dto.project.ProjectFilterDto;
 import faang.school.projectservice.dto.project.ProjectUpdateDto;
+import faang.school.projectservice.event_drive.redis.event.ProjectViewEvent;
+import faang.school.projectservice.event_drive.redis.publisher.ProjectViewEventPublisher;
 import faang.school.projectservice.service.project.ProjectService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Tag(name = "Project Management", description = "Operations related to managing projects")
@@ -32,6 +35,7 @@ import java.util.List;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectViewEventPublisher projectViewEventPublisher;
 
     @Operation(summary = "Create a new project",
             description = "Creates a new project with the provided details.")
@@ -65,5 +69,20 @@ public class ProjectController {
     @GetMapping("/{projectId}")
     public ResponseEntity<ProjectUpdateDto> findProjectById(@PathVariable Long projectId) {
         return ResponseEntity.ok(projectService.findProjectById(projectId));
+    }
+
+    @Operation(summary = "Get view project")
+    @GetMapping("/{projectId}/view")
+    public ResponseEntity<Void> viewProfile(@PathVariable Long projectId,
+                                            @RequestHeader("x-user-id") Long userId
+                                            ) {
+        projectViewEventPublisher.publish(
+                ProjectViewEvent.builder()
+                        .projectId(projectId)
+                        .actorId(userId)
+                        .receivedAt(LocalDateTime.now())
+                        .build()
+        );
+        return ResponseEntity.ok().build();
     }
 }

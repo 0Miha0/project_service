@@ -30,6 +30,7 @@ spring:
       channels:
         calculations_channel:
           name: calculations_channel
+        project_views: project_views_channel
 
 server:
   port: 8082
