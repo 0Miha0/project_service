@@ -13,10 +13,10 @@ public class ProjectViewEventPublisher implements EventPublisher<ProjectViewEven
     private final RedisTemplate<String, Object> redisTemplate;
 
     @Value("${spring.data.redis.channels.project_views}")
-    private String postViewEventChannel;
+    private String projectViewsChannel;
 
     @Override
     public void publish(ProjectViewEvent event) {
-        redisTemplate.convertAndSend(postViewEventChannel, event);
+        redisTemplate.convertAndSend(projectViewsChannel, event);
     }
 }

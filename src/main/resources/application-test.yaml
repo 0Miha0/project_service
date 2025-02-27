@@ -18,12 +18,13 @@ spring:
     redis:
       port: 6379
       host: localhost
-      channel:
+      channels:
         project: project_channel
         calculations_channel:
           name: calculations_channel
         calculations_messages_processing:
           enabled: false
+        project_views: project_views_channel
 
 services:
   s3:
