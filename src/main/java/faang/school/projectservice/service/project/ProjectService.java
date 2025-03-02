@@ -3,6 +3,8 @@ package faang.school.projectservice.service.project;
 import faang.school.projectservice.dto.project.ProjectCreateDto;
 import faang.school.projectservice.dto.project.ProjectFilterDto;
 import faang.school.projectservice.dto.project.ProjectUpdateDto;
+import faang.school.projectservice.event_drive.redis.event.ProjectCreateEvent;
+import faang.school.projectservice.event_drive.redis.publisher.ProjectCreateEventPublisher;
 import faang.school.projectservice.exception.customexception.DataValidationException;
 import faang.school.projectservice.filter.Filter;
 import faang.school.projectservice.mapper.project.ProjectMapper;
@@ -34,6 +36,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
     private final List<Filter<Project, ProjectFilterDto>> projectFilters;
+    private final ProjectCreateEventPublisher projectCreateEventPublisher;
 
     @Transactional
     public void createProject(ProjectCreateDto dto, Long userId) {
@@ -44,6 +47,12 @@ public class ProjectService {
         project.setMaxStorageSize(new BigInteger(String.valueOf(maxProjectStorageSize)));
         save(project);
         log.info("Project created successfully: {}", dto.getName());
+
+        projectCreateEventPublisher.publish(
+                ProjectCreateEvent.builder()
+                        .userId(userId)
+                        .build()
+        );
     }
 
     @Transactional
