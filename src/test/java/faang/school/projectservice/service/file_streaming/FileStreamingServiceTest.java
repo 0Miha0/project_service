@@ -1,29 +1,20 @@
 package faang.school.projectservice.service.file_streaming;
 
-import faang.school.projectservice.exception.customexception.DataValidationException;
-import faang.school.projectservice.exception.customexception.StreamingFileError;
-import faang.school.projectservice.validator.file_streaming.FileStreamingValidator;
+import faang.school.projectservice.exception.StreamingFileError;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipInputStream;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -35,19 +26,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class FileStreamingServiceTest {
 
-    @Mock
-    private FileStreamingValidator fileStreamingValidator;
-
     @InjectMocks
     private FileStreamingService fileStreamingService;
 
     @Test
     void getStreamingResponseBodyTest() throws Exception {
-        Path imagePath = Paths.get("src/test/resources/files/test-image.png");
-        byte[] fileData = Files.readAllBytes(imagePath);
-        InputStream fileStream = new ByteArrayInputStream(fileData);
-
-        Mockito.doNothing().when(fileStreamingValidator).validateFileStreaming(Mockito.any(), Mockito.anyString());
+        String content = "Sample content for testing";
+        InputStream fileStream = new ByteArrayInputStream(content.getBytes());
 
         StreamingResponseBody response =
                 fileStreamingService.getStreamingResponseBody(fileStream);
@@ -56,7 +41,13 @@ class FileStreamingServiceTest {
         assertNotNull(response);
         response.writeTo(outputStream);
 
-        assertArrayEquals(fileData, outputStream.toByteArray());
+        assertEquals(content, outputStream.toString());
+    }
+
+    @Test
+    void getStreamingResponseBodyThrowsExceptionTest() {
+        assertThrows(IllegalArgumentException.class,
+                () -> fileStreamingService.getStreamingResponseBody(null));
     }
 
     @Test

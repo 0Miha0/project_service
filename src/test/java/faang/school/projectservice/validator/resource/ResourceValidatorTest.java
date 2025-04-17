@@ -1,11 +1,10 @@
-package faang.school.projectservice.validation.resource;
+package faang.school.projectservice.validator.resource;
 
-import faang.school.projectservice.exception.customexception.DataValidationException;
-import faang.school.projectservice.exception.customexception.StorageExceededException;
+import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.exception.StorageExceededException;
 import faang.school.projectservice.model.Resource;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
-import faang.school.projectservice.validator.resource.ResourceValidator;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
@@ -13,7 +12,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ResourceValidatorTest {

@@ -3,19 +3,20 @@ package faang.school.projectservice.service.teammember;
 import faang.school.projectservice.client.UserServiceClient;
 import faang.school.projectservice.config.context.UserContext;
 import faang.school.projectservice.dto.client.UserDto;
-import faang.school.projectservice.dto.team_member.TeamMemberDto;
-import faang.school.projectservice.dto.team_member.TeamMemberUpdateDto;
-import faang.school.projectservice.exception.customexception.DataValidationException;
+import faang.school.projectservice.dto.teammember.TeamMemberDto;
+import faang.school.projectservice.dto.teammember.TeamMemberFilterDto;
+import faang.school.projectservice.dto.teammember.TeamMemberUpdateDto;
+import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.exception.EntityNotFoundException;
+import faang.school.projectservice.filter.teammember.TeamMemberFilter;
+import faang.school.projectservice.jpa.TeamMemberJpaRepository;
 import faang.school.projectservice.mapper.team_member.TeamMemberMapperImpl;
 import faang.school.projectservice.model.Project;
 import faang.school.projectservice.model.Team;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
-import faang.school.projectservice.repository.TeamMemberRepository;
 import faang.school.projectservice.service.project.ProjectService;
-import faang.school.projectservice.service.TeamMemberService;
-import faang.school.projectservice.service.TeamService;
-import jakarta.persistence.EntityNotFoundException;
+import faang.school.projectservice.service.team.TeamService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class TeamMemberServiceTest {
     private static final String TEAM_MEMBER = "TeamMember";
 
     @Mock
-    private TeamMemberRepository teamMemberRepository;
+    private TeamMemberJpaRepository teamMemberRepository;
 
     @Mock
     private ProjectService projectService;
@@ -56,6 +57,12 @@ class TeamMemberServiceTest {
 
     @Spy
     private TeamMemberMapperImpl teamMemberMapper;
+
+    @Mock
+    private TeamMemberFilter teamMemberFilter;
+
+    @Mock
+    private List<TeamMemberFilter> teamMemberFilters;
 
     @Mock
     private UserServiceClient userServiceClient;
@@ -125,12 +132,12 @@ class TeamMemberServiceTest {
                 .role(List.of("MANAGER"))
                 .build();
 
-        when(projectService.findById(project.getId()))
+        when(projectService.getProjectById(project.getId()))
                 .thenReturn(project);
         when(userContext.getUserId())
                 .thenReturn(currentUser.getUserId());
         when(teamMemberRepository.findSingleByUserId(currentUser.getUserId()))
-                .thenReturn(currentUser);
+                .thenReturn(Optional.of(currentUser));
         when(teamService.findById(teams.get(0).getId()))
                 .thenReturn(teams.get(0));
         when(teamMemberRepository.save(any(TeamMember.class)))
@@ -180,12 +187,12 @@ class TeamMemberServiceTest {
                 .role(List.of("MANAGER"))
                 .build();
 
-        when(projectService.findById(project.getId()))
+        when(projectService.getProjectById(project.getId()))
                 .thenReturn(project);
         when(userContext.getUserId())
                 .thenReturn(currentUser.getUserId());
         when(teamMemberRepository.findSingleByUserId(currentUser.getUserId()))
-                .thenReturn(currentUser);
+                .thenReturn(Optional.of(currentUser));
 
         DataValidationException exception = assertThrows(DataValidationException.class, () ->
                 teamMemberService.addMemberToTheTeam(project.getId(), teamMemberDto)
@@ -233,12 +240,12 @@ class TeamMemberServiceTest {
                 .role(List.of("MANAGER"))
                 .build();
 
-        when(projectService.findById(project.getId()))
+        when(projectService.getProjectById(project.getId()))
                 .thenReturn(project);
         when(userContext.getUserId())
                 .thenReturn(currentUser.getUserId());
         when(teamMemberRepository.findSingleByUserId(currentUser.getUserId()))
-                .thenReturn(currentUser);
+                .thenReturn(Optional.of(currentUser));
         when(teamMemberRepository.save(any(TeamMember.class)))
                 .thenReturn(updatedUser);
 
@@ -299,14 +306,14 @@ class TeamMemberServiceTest {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        when(projectService.findById(project.getId()))
+        when(projectService.getProjectById(project.getId()))
                 .thenReturn(project);
         when(teamMemberRepository.findById(updateUserId))
                 .thenReturn(Optional.of(updatedUser));
         when(userContext.getUserId())
                 .thenReturn(currentUserId);
         when(teamMemberRepository.findSingleByUserId(currentUserId))
-                .thenReturn(currentUser);
+                .thenReturn(Optional.of(currentUser));
         when(userServiceClient.getUser(updateUserId))
                 .thenReturn(userDto);
         when(teamMemberRepository.save(any(TeamMember.class)))
@@ -318,7 +325,7 @@ class TeamMemberServiceTest {
 
         assertNotNull(result);
 
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
         verify(teamMemberRepository, times(1)).findById(updateUserId);
         verify(teamMemberRepository, times(1)).findSingleByUserId(currentUserId);
         verify(userServiceClient, times(1)).getUser(updateUserId);
@@ -380,14 +387,14 @@ class TeamMemberServiceTest {
                 .updatedAt(LocalDateTime.now())
                 .build();
 
-        when(projectService.findById(project.getId()))
+        when(projectService.getProjectById(project.getId()))
                 .thenReturn(project);
         when(teamMemberRepository.findById(updateUserId))
                 .thenReturn(Optional.of(updatedUser));
         when(userContext.getUserId())
                 .thenReturn(currentUserId);
         when(teamMemberRepository.findSingleByUserId(currentUserId))
-                .thenReturn(currentUser);
+                .thenReturn(Optional.of(currentUser));
         when(userServiceClient.getUser(updateUserId))
                 .thenReturn(userDto);
         when(userServiceClient.saveUser(any(UserDto.class)))
@@ -397,7 +404,7 @@ class TeamMemberServiceTest {
 
         assertNotNull(result);
 
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
         verify(teamMemberRepository, times(1)).findById(updateUserId);
         verify(userServiceClient, times(1)).getUser(userDto.getId());
         verify(userServiceClient, times(1)).saveUser(any(UserDto.class));
@@ -445,17 +452,60 @@ class TeamMemberServiceTest {
         when(userContext.getUserId())
                 .thenReturn(currentUserId);
         when(teamMemberRepository.findSingleByUserId(currentUserId))
-                .thenReturn(currentUser);
+                .thenReturn(Optional.of(currentUser));
         when(teamMemberRepository.findById(deleteUserId))
                 .thenReturn(Optional.ofNullable(deleteUser));
-        when(projectService.findById(projectId))
+        when(projectService.getProjectById(projectId))
                 .thenReturn(project);
         doNothing().when(teamMemberRepository).deleteById(deleteUserId);
 
         teamMemberService.deleteMemberFromTheTeam(projectId, deleteUserId);
 
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
         verify(teamMemberRepository, times(1)).deleteById(deleteUserId);
+    }
+
+    @Test
+    @DisplayName("Verifying successful retrieval of participants with filtering")
+    public void checkGetTeamMembersByFilterSuccessTest() {
+        Long projectId = 1L;
+
+        TeamMemberFilterDto filterDto = TeamMemberFilterDto.builder()
+                .teamMemberRolePattern("INTERN")
+                .build();
+
+        List<TeamMember> memberList = List.of(
+                TeamMember.builder().id(2L).userId(2L).roles(List.of(TeamRole.INTERN)).build(),
+                TeamMember.builder().id(3L).userId(3L).roles(List.of(TeamRole.INTERN)).build(),
+                TeamMember.builder().id(4L).userId(4L).roles(List.of(TeamRole.INTERN)).build(),
+                TeamMember.builder().id(4L).userId(5L).roles(List.of(TeamRole.INTERN)).build(),
+                TeamMember.builder().id(5L).userId(6L).roles(List.of(TeamRole.OWNER)).build(),
+                TeamMember.builder().id(6L).userId(7L).roles(List.of(TeamRole.MANAGER)).build()
+        );
+
+        Project project = Project.builder()
+                .id(projectId)
+                .ownerId(1L)
+                .build();
+
+        List<Team> teams = List.of(
+                Team.builder()
+                        .id(1L)
+                        .teamMembers(memberList)
+                        .project(project)
+                        .build()
+        );
+
+        project.setTeams(teams);
+
+        when(projectService.getProjectById(projectId))
+                .thenReturn(project);
+
+        List<TeamMemberDto> result = teamMemberService.getAllMembersWithFilter(projectId, filterDto);
+
+        assertNotNull(result);
+
+        verify(projectService, times(1)).getProjectById(projectId);
     }
 
     @Test
@@ -492,14 +542,14 @@ class TeamMemberServiceTest {
                 .teams(teams)
                 .build();
 
-        when(projectService.findById(projectId))
+        when(projectService.getProjectById(projectId))
                 .thenReturn(project);
 
         List<TeamMemberDto> result = teamMemberService.getAllMembersFromTheProject(projectId);
 
         assertNotNull(result);
 
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
     }
 
     @Test
@@ -536,14 +586,25 @@ class TeamMemberServiceTest {
 
         project.setTeams(teams);
 
-        when(projectService.findById(projectId))
+        when(projectService.getProjectById(projectId))
                 .thenReturn(project);
 
         TeamMemberDto result = teamMemberService.getMemberById(projectId, memberId);
 
         assertNotNull(result);
 
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
+    }
+
+    @Test
+    public void findByIdNotFoundTest() {
+        Long userId = 1L;
+        when(teamMemberRepository.findById(userId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> teamMemberService.findById(userId));
+
+        assertEquals("Entity %s with ID %s not found".formatted(TEAM_MEMBER, userId), exception.getMessage());
+        verify(teamMemberRepository, times(1)).findById(userId);
     }
 
     @Test
@@ -586,11 +647,24 @@ class TeamMemberServiceTest {
         long userId = 1L;
         long projectId = 2L;
         TeamMember teamMember = new TeamMember();
-        when(teamMemberRepository.findByUserIdAndProjectId(userId, projectId)).thenReturn(teamMember);
+        when(teamMemberRepository.findByUserIdAndProjectId(userId, projectId)).thenReturn(Optional.of(teamMember));
 
         TeamMember result = teamMemberService.findByUserIdAndProjectId(userId, projectId);
 
         assertEquals(teamMember, result);
+        verify(teamMemberRepository, times(1)).findByUserIdAndProjectId(userId, projectId);
+    }
+
+    @Test
+    void findByUserIdAndProjectIdNotFoundTest() {
+        long userId = 1L;
+        long projectId = 2L;
+        when(teamMemberRepository.findByUserIdAndProjectId(userId, projectId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(
+                EntityNotFoundException.class, () -> teamMemberService.findByUserIdAndProjectId(userId, projectId));
+
+        assertEquals("Entity %s with ID %s not found".formatted(TEAM_MEMBER, userId), exception.getMessage());
         verify(teamMemberRepository, times(1)).findByUserIdAndProjectId(userId, projectId);
     }
 

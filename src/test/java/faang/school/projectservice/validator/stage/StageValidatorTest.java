@@ -1,14 +1,13 @@
-package faang.school.projectservice.validation.stage;
+package faang.school.projectservice.validator.stage;
 
-import faang.school.projectservice.exception.customexception.DataValidationException;
-import faang.school.projectservice.validator.stage.StageValidator;
+import faang.school.projectservice.exception.DataValidationException;
+import faang.school.projectservice.model.stage.Stage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class StageValidatorTest {
@@ -56,5 +55,19 @@ public class StageValidatorTest {
                 () -> stageValidator.validationOnNullOrEmptyList(nullList, "List cannot be null or empty"));
 
         assertEquals("List cannot be null or empty", exception.getMessage());
+    }
+
+    @Test
+    @DisplayName("Validation different stages")
+    public void validateDifferentStagesTest() {
+        Stage sourceStage = Stage.builder().stageId(1L).build();
+        Stage transferStage = Stage.builder().stageId(1L).build();
+        String message = "Validating that source and transfer stages are different";
+
+        DataValidationException exception = assertThrows(DataValidationException.class,
+                () -> stageValidator.validateDifferentStages(sourceStage, transferStage, message));
+
+        assertEquals("Validating that source and transfer stages are different", exception.getMessage());
+
     }
 }

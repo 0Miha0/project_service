@@ -8,9 +8,9 @@ import faang.school.projectservice.model.Resource;
 import faang.school.projectservice.model.ResourceStatus;
 import faang.school.projectservice.model.ResourceType;
 import faang.school.projectservice.model.TeamMember;
+import faang.school.projectservice.service.amazonclient.AmazonClientService;
 import faang.school.projectservice.service.resource.ResourceService;
-import faang.school.projectservice.service.TeamMemberService;
-import faang.school.projectservice.service.amazon_client.AmazonClientService;
+import faang.school.projectservice.service.teammember.TeamMemberService;
 import faang.school.projectservice.validator.resource.ResourceValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -101,7 +101,7 @@ class ProjectFilesServiceTest {
                 .build();
 
         doNothing().when(resourceValidator).validateFileSizeNotBigger2Gb(file.getSize());
-        when(projectService.findById(projectId)).thenReturn(project);
+        when(projectService.getProjectById(projectId)).thenReturn(project);
         doNothing().when(resourceValidator).
                 validateMaxStorageSizeIsNotNull(maxStorageSize);
         doNothing().when(resourceValidator).validateStorageSizeNotExceeded(maxStorageSize,
@@ -112,13 +112,15 @@ class ProjectFilesServiceTest {
         projectFilesService.uploadFile(projectId, teamMemberId, file);
 
         verify(resourceValidator).validateFileSizeNotBigger2Gb(file.getSize());
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
         verify(resourceValidator, times(1)).
                 validateMaxStorageSizeIsNotNull(maxStorageSize);
         verify(resourceValidator, times(1)).validateStorageSizeNotExceeded(
                 maxStorageSize, currentStorageSize.add(BigInteger.valueOf(file.getSize())));
         verify(teamMemberService, times(1)).findById(teamMemberId);
         verify(amazonClientService, times(1)).uploadFile(file, folder);
+        verify(projectService, times(1)).
+                updateProject(projectMapper.toDto(savingProject));
         verify(resourceService, times(1)).save(updatedResource);
     }
 
@@ -127,25 +129,19 @@ class ProjectFilesServiceTest {
         long resourceId = 1L;
         String key = "key";
         String mockFileContent = "This is a test";
-        Project project = Project.builder()
-                .id(1L)
-                .name("name")
-                .description("description")
-                .build();
         Resource resource = Resource.builder()
                 .key(key)
                 .id(resourceId)
-                .project(project)
                 .build();
         ByteArrayInputStream mockInputStream = new ByteArrayInputStream(mockFileContent.getBytes());
         S3ObjectInputStream s3ObjectInputStream = new S3ObjectInputStream(mockInputStream, null);
 
-        when(resourceService.findById(resourceId)).thenReturn(resource);
+        when(resourceService.getResource(resourceId)).thenReturn(resource);
         when(amazonClientService.downloadFile(key)).thenReturn(s3ObjectInputStream);
 
         InputStream result = projectFilesService.downloadFile(resourceId);
 
-        verify(resourceService, times(1)).findById(resourceId);
+        verify(resourceService, times(1)).getResource(resourceId);
         verify(amazonClientService, times(1)).downloadFile(key);
 
         String resultContent = new String(result.readAllBytes());
@@ -204,7 +200,7 @@ class ProjectFilesServiceTest {
         namesWithS3ObjectInputStreams.put(name1, s3ObjectInputStream1);
         namesWithS3ObjectInputStreams.put(name3, s3ObjectInputStream3);
 
-        when(projectService.findByIdWithResources(projectId)).thenReturn(project);
+        when(projectService.getProjectById(projectId)).thenReturn(project);
         when(amazonClientService.downloadAllFiles(filesNamesWithKeys)).thenReturn(namesWithS3ObjectInputStreams);
 
         Map<String, InputStream> result = projectFilesService.downloadAllFiles(projectId);
@@ -212,7 +208,7 @@ class ProjectFilesServiceTest {
         String resultContent1 = new String(result.get(name1).readAllBytes());
         String resultContent3 = new String(result.get(name3).readAllBytes());
 
-        verify(projectService, times(1)).findByIdWithResources(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
         verify(amazonClientService, times(1)).downloadAllFiles(filesNamesWithKeys);
 
         assertNotNull(result);
@@ -258,14 +254,15 @@ class ProjectFilesServiceTest {
                 .project(project)
                 .build();
 
-        when(resourceService.findById(resourceId)).thenReturn(resource);
+        when(resourceService.getResource(resourceId)).thenReturn(resource);
         when(teamMemberService.findById(teamMemberId)).thenReturn(teamMember);
-        when(projectService.findById(projectId)).thenReturn(project);
+        when(projectService.getProjectById(projectId)).thenReturn(project);
         doNothing().when(resourceValidator).validateAllowedToDeleteFile(resource, teamMember);
 
         projectFilesService.deleteFile(resourceId, teamMemberId);
 
         verify(amazonClientService, times(1)).deleteFile(key);
+        verify(projectService, times(1)).updateProject(projectMapper.toDto(updatedProject));
         verify(resourceService, times(1)).save(updatedResource);
     }
 }

@@ -1,8 +1,8 @@
 package faang.school.projectservice.service.resource;
 
+import faang.school.projectservice.exception.EntityNotFoundException;
+import faang.school.projectservice.jpa.ResourceRepository;
 import faang.school.projectservice.model.Resource;
-import faang.school.projectservice.repository.ResourceRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,7 +13,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,7 +33,7 @@ class ResourceServiceTest {
 
         when(resourceRepository.findById(resourceId)).thenReturn(Optional.ofNullable(resource));
 
-        assertDoesNotThrow(() -> resourceService.findById(resourceId));
+        assertDoesNotThrow(() -> resourceService.getResource(resourceId));
     }
 
     @Test
@@ -44,7 +43,7 @@ class ResourceServiceTest {
         doThrow(EntityNotFoundException.class).when(resourceRepository).findById(resourceId);
 
         assertThrows(EntityNotFoundException.class,
-                () -> resourceService.findById(resourceId));
+                () -> resourceService.getResource(resourceId));
     }
 
     @Test

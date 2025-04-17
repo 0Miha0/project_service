@@ -1,11 +1,10 @@
-package faang.school.projectservice.validation.internship;
+package faang.school.projectservice.validator.internship;
 
-import faang.school.projectservice.exception.customexception.DataValidationException;
+import faang.school.projectservice.exception.DataValidationException;
 import faang.school.projectservice.model.Internship;
 import faang.school.projectservice.model.InternshipStatus;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
-import faang.school.projectservice.validator.internship.InternshipValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,7 +12,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class InternshipValidatorTest {

@@ -1,13 +1,16 @@
-package faang.school.projectservice.service.amazon_client;
+package faang.school.projectservice.service.amazonclient;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import faang.school.projectservice.exception.customexception.FileDeleteException;
-import faang.school.projectservice.exception.customexception.FileDownloadException;
-import faang.school.projectservice.exception.customexception.FileUploadException;
+import faang.school.projectservice.exception.FileDeleteException;
+import faang.school.projectservice.exception.FileDownloadException;
+import faang.school.projectservice.exception.FileUploadException;
+import faang.school.projectservice.exception.InvalidFormatFile;
+import faang.school.projectservice.service.image.ImageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,8 +22,12 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,6 +54,9 @@ class AmazonClientServiceTest {
     private MultipartFile multipartFile;
 
     @Mock
+    private ImageService imageService;
+
+    @Mock
     private S3Object s3Object;
 
     @InjectMocks
@@ -55,6 +65,65 @@ class AmazonClientServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(amazonClientService, "bucketName", "projectbucket");
+    }
+
+    @Test
+    void updateProjectCoverInvalidFormatTest() {
+        when(multipartFile.getOriginalFilename()).thenReturn("file.txt");
+
+        assertThrows(InvalidFormatFile.class, () -> amazonClientService.updateProjectCover(multipartFile));
+    }
+
+    @Test
+    void updateProjectCoverThrowsIOExceptionTest() throws IOException {
+        when(multipartFile.getOriginalFilename()).thenReturn("first.png");
+        when(multipartFile.getInputStream()).thenThrow(IOException.class);
+
+        assertThrows(RuntimeException.class, () -> amazonClientService.updateProjectCover(multipartFile));
+    }
+
+    @Test
+    void updateProjectCoverTest() throws IOException {
+
+        String fileName = "image.png";
+        BufferedImage image = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", baos);
+        InputStream inputStream = new ByteArrayInputStream(baos.toByteArray());
+
+        when(multipartFile.getOriginalFilename()).thenReturn(fileName);
+        when(multipartFile.getInputStream()).thenReturn(inputStream);
+        when(imageService.resizeImage(any(BufferedImage.class))).thenReturn(image);
+
+        String result = amazonClientService.updateProjectCover(multipartFile);
+
+        assertTrue(result.contains("-" + fileName));
+    }
+
+    @Test
+    void getProjectCoverHandlesIOExceptionTest() throws IOException {
+
+        S3ObjectInputStream inputStream = mock(S3ObjectInputStream.class);
+        when(s3client.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
+        when(s3Object.getObjectContent()).thenReturn(inputStream);
+        when(inputStream.readAllBytes()).thenThrow(new IOException("Test exception"));
+
+        assertThrows(RuntimeException.class, () -> amazonClientService.getProjectCover("test.png"));
+    }
+
+    @Test
+    void getProjectCoverTest() {
+        String fileName = "first.png";
+        InputStream inputStream = new ByteArrayInputStream("test image".getBytes());
+        S3Object s3Object = new S3Object();
+        s3Object.setObjectContent(inputStream);
+
+        when(s3client.getObject(any(GetObjectRequest.class))).thenReturn(s3Object);
+
+        byte[] result = amazonClientService.getProjectCover(fileName);
+
+        assertEquals("test image", new String(result));
     }
 
     @Test
@@ -90,7 +159,7 @@ class AmazonClientServiceTest {
 
         FileUploadException exception = assertThrows(FileUploadException.class,
                 () -> amazonClientService.uploadFile(mockFile, folder));
-        assertTrue(exception.getMessage().contains("Error uploading file to S3 with key"));
+        assertTrue(exception.getMessage().contains("Error uploading file with key"));
 
         verify(s3client, never()).putObject(any(PutObjectRequest.class));
     }
@@ -181,7 +250,7 @@ class AmazonClientServiceTest {
 
         FileDeleteException exception = assertThrows(FileDeleteException.class,
                 () -> amazonClientService.deleteFile(key));
-        assertEquals("Error deleting file from S3 with key: " + key, exception.getMessage());
+        assertEquals("Error deleting file with key: " + key, exception.getMessage());
 
         verify(s3client, times(1)).deleteObject(bucketName, key);
     }

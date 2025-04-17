@@ -2,7 +2,6 @@ package faang.school.projectservice.service.team;
 
 import faang.school.projectservice.model.Team;
 import faang.school.projectservice.repository.TeamRepository;
-import faang.school.projectservice.service.TeamService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

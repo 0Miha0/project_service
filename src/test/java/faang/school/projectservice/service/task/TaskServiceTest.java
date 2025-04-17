@@ -3,7 +3,9 @@ package faang.school.projectservice.service.task;
 import faang.school.projectservice.dto.task.CreateUpdateTaskDto;
 import faang.school.projectservice.dto.task.TaskDto;
 import faang.school.projectservice.dto.task.TaskFilterDto;
+import faang.school.projectservice.exception.EntityNotFoundException;
 import faang.school.projectservice.filter.Filter;
+import faang.school.projectservice.jpa.TaskRepository;
 import faang.school.projectservice.mapper.task.TaskMapper;
 import faang.school.projectservice.mapper.task.TaskMapperImpl;
 import faang.school.projectservice.model.Project;
@@ -11,13 +13,11 @@ import faang.school.projectservice.model.Task;
 import faang.school.projectservice.model.TaskStatus;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.stage.Stage;
-import faang.school.projectservice.repository.TaskRepository;
-import faang.school.projectservice.service.StageService;
-import faang.school.projectservice.service.TeamMemberService;
 import faang.school.projectservice.service.project.ProjectService;
+import faang.school.projectservice.service.stage.StageService;
+import faang.school.projectservice.service.teammember.TeamMemberService;
 import faang.school.projectservice.validator.task.TaskValidator;
 import faang.school.projectservice.validator.team_member.TeamMemberValidator;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -121,7 +121,7 @@ class TaskServiceTest {
 
         doNothing().when(taskValidator).validateTaskIdIsNull(taskDto.getId());
         when(teamMemberService.findById(teamMember.getId())).thenReturn(teamMember);
-        when(projectService.findById(project.getId())).thenReturn(project);
+        when(projectService.getProjectById(project.getId())).thenReturn(project);
         doNothing().when(teamMemberValidator).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
 
@@ -129,18 +129,18 @@ class TaskServiceTest {
                 thenReturn(Optional.ofNullable(parentTask));
         when(taskRepository.findById(taskDto.getLinkedTasksIds().get(0))).
                 thenReturn(Optional.of(linkedTask));
-        when(stageService.findById(taskDto.getStageId())).thenReturn(stage);
+        when(stageService.getStageEntity(taskDto.getStageId())).thenReturn(stage);
 
         taskService.createTask(taskDto, taskCreator);
 
         verify(taskValidator, times(1)).validateTaskIdIsNull(taskDto.getId());
         verify(teamMemberService, times(1)).findById(teamMember.getId());
-        verify(projectService).findById(project.getId());
+        verify(projectService).getProjectById(project.getId());
         verify(teamMemberValidator).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
         verify(taskRepository, times(1)).findById(taskDto.getParentTaskId());
         verify(taskRepository, times(1)).findById(taskDto.getLinkedTasksIds().get(0));
-        verify(stageService, times(1)).findById(taskDto.getStageId());
+        verify(stageService, times(1)).getStageEntity(taskDto.getStageId());
         verify(taskRepository).save(captor.capture());
         Task resultTask = captor.getValue();
         assertEquals(taskToSave, resultTask);
@@ -192,7 +192,7 @@ class TaskServiceTest {
 
         doNothing().when(taskValidator).validateTaskIdIsNotNull(taskDto.getId());
         when(teamMemberService.findById(teamMember.getId())).thenReturn(teamMember);
-        when(projectService.findById(project.getId())).thenReturn(project);
+        when(projectService.getProjectById(project.getId())).thenReturn(project);
         doNothing().when(teamMemberValidator).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
 
@@ -200,18 +200,18 @@ class TaskServiceTest {
                 thenReturn(Optional.ofNullable(parentTask));
         when(taskRepository.findById(taskDto.getLinkedTasksIds().get(0))).
                 thenReturn(Optional.of(linkedTask));
-        when(stageService.findById(taskDto.getStageId())).thenReturn(stage);
+        when(stageService.getStageEntity(taskDto.getStageId())).thenReturn(stage);
 
         taskService.updateTask(taskDto, taskUpdater);
 
         verify(taskValidator, times(1)).validateTaskIdIsNotNull(taskDto.getId());
         verify(teamMemberService, times(1)).findById(teamMember.getId());
-        verify(projectService).findById(project.getId());
+        verify(projectService).getProjectById(project.getId());
         verify(teamMemberValidator).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
         verify(taskRepository, times(1)).findById(taskDto.getParentTaskId());
         verify(taskRepository, times(1)).findById(taskDto.getLinkedTasksIds().get(0));
-        verify(stageService, times(1)).findById(taskDto.getStageId());
+        verify(stageService, times(1)).getStageEntity(taskDto.getStageId());
         verify(taskRepository).save(captor.capture());
         Task resultTask = captor.getValue();
         assertEquals(taskToSave, resultTask);
@@ -281,7 +281,7 @@ class TaskServiceTest {
 
         when(taskRepository.findById(taskId)).thenReturn(Optional.of(task));
         when(teamMemberService.findById(requesterId)).thenReturn(teamMember);
-        when(projectService.findById(projectId)).thenReturn(project);
+        when(projectService.getProjectById(projectId)).thenReturn(project);
         doNothing().when(teamMemberValidator).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
 
@@ -348,7 +348,7 @@ class TaskServiceTest {
         List<TaskDto> listTaskDto = new ArrayList<>(List.of(firstTaskDto, secondTaskDto));
 
         when(teamMemberService.findById(requesterId)).thenReturn(teamMember);
-        when(projectService.findById(projectId)).thenReturn(project);
+        when(projectService.getProjectById(projectId)).thenReturn(project);
         doNothing().when(teamMemberValidator).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
         when(taskRepository.findAllByProjectId(projectId)).
@@ -360,7 +360,7 @@ class TaskServiceTest {
         assertEquals(listTaskDto, result);
 
         verify(teamMemberService, times(1)).findById(requesterId);
-        verify(projectService, times(1)).findById(projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
         verify(teamMemberValidator, times(1)).
                 validateIsTeamMemberParticipantOfProject(teamMember, project);
         verify(taskRepository, times(1)).findAllByProjectId(projectId);

@@ -1,13 +1,15 @@
 package faang.school.projectservice.service.internship;
 
+import faang.school.projectservice.dto.internship.InternshipCreationDto;
 import faang.school.projectservice.dto.internship.InternshipDto;
 import faang.school.projectservice.dto.internship.InternshipFilterDto;
 import faang.school.projectservice.dto.internship.InternshipUpdateDto;
 import faang.school.projectservice.dto.internship.InternshipUpdateRequestDto;
+import faang.school.projectservice.exception.EntityNotFoundException;
 import faang.school.projectservice.filter.Filter;
 import faang.school.projectservice.filter.internship.InternshipStatusFilter;
 import faang.school.projectservice.filter.internship.InternshipTeamRoleFilter;
-import faang.school.projectservice.mapper.internship.InternshipMapperImpl;
+import faang.school.projectservice.mapper.intership.InternshipMapperImpl;
 import faang.school.projectservice.model.Internship;
 import faang.school.projectservice.model.InternshipStatus;
 import faang.school.projectservice.model.Project;
@@ -17,10 +19,9 @@ import faang.school.projectservice.model.Team;
 import faang.school.projectservice.model.TeamMember;
 import faang.school.projectservice.model.TeamRole;
 import faang.school.projectservice.repository.InternshipRepository;
-import faang.school.projectservice.service.InternshipService;
 import faang.school.projectservice.service.project.ProjectService;
-import faang.school.projectservice.service.TeamMemberService;
-import faang.school.projectservice.service.TeamService;
+import faang.school.projectservice.service.team.TeamService;
+import faang.school.projectservice.service.teammember.TeamMemberService;
 import faang.school.projectservice.validator.internship.InternshipValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
@@ -91,8 +95,75 @@ class InternshipServiceTest {
 
         internshipService = new InternshipService(
                 internshipRepository, validator, internshipMapper, teamMemberService,
-                projectService, teamService, filters
+                teamService, projectService, restTemplate, filters
         );
+    }
+
+    @Test
+    void createInternshipValidTest() {
+        List<Long> internUserIds = new ArrayList<>(List.of(1L, 2L, 3L, 4L));
+        String internshipName = "Internship Spring 2025";
+        String internshipDescription = "Some description";
+        long mentorUserId = 8L;
+        long creatorUserId = 9L;
+        long projectId = 10L;
+        LocalDateTime startDate = LocalDateTime.now().plusMonths(1);
+        LocalDateTime endDate = LocalDateTime.now().plusMonths(1 + MAX_INTERNSHIP_MONTHS_DURATION).minusDays(1);
+
+        InternshipCreationDto creationDto = InternshipCreationDto.builder()
+                .internUserIds(internUserIds)
+                .name(internshipName)
+                .description(internshipDescription)
+                .mentorUserId(mentorUserId)
+                .creatorUserId(creatorUserId)
+                .projectId(projectId)
+                .startDate(startDate)
+                .endDate(endDate)
+                .build();
+
+        when(restTemplate.exchange(
+                any(RequestEntity.class),
+                eq(new ParameterizedTypeReference<List<Long>>() {})
+        )).thenReturn(ResponseEntity.ok(List.of()));
+
+        TeamMember mentor = new TeamMember();
+        mentor.setUserId(mentorUserId);
+        mentor.setRoles(List.of(TeamRole.ANALYST, TeamRole.MANAGER));
+        when(teamMemberService.findByUserIdAndProjectId(mentorUserId, projectId)).thenReturn(mentor);
+
+        Project project = new Project();
+        project.setId(10L);
+        Mockito.lenient().when(projectService.getProjectById(projectId)).thenReturn(project);
+
+        when(teamMemberService.save(any(TeamMember.class))).thenAnswer(invocation -> {
+            TeamMember teamMember = invocation.getArgument(0);
+            TeamMember savedTeamMember = new TeamMember();
+            savedTeamMember.setUserId(teamMember.getUserId());
+            savedTeamMember.setRoles(List.of(TeamRole.INTERN));
+            return savedTeamMember;
+        });
+
+        when(internshipRepository.save(any(Internship.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        InternshipDto savedInternshipDto = assertDoesNotThrow(() -> internshipService.createInternship(creationDto));
+
+        assertEquals(internUserIds, savedInternshipDto.getInternUserIds());
+        assertEquals(internshipName, savedInternshipDto.getName());
+        assertEquals(internshipDescription, savedInternshipDto.getDescription());
+        assertEquals(mentorUserId, savedInternshipDto.getMentorUserId());
+        assertEquals(creatorUserId, savedInternshipDto.getCreatorUserId());
+        assertEquals(projectId, savedInternshipDto.getProjectId());
+        assertEquals(startDate, savedInternshipDto.getStartDate());
+        assertEquals(endDate, savedInternshipDto.getEndDate());
+        assertEquals(InternshipStatus.NOT_STARTED, savedInternshipDto.getStatus());
+        verify(restTemplate, times(1)).exchange(
+                any(RequestEntity.class),
+                eq(new ParameterizedTypeReference<List<Long>>() {})
+        );
+        verify(teamMemberService, times(1)).findByUserIdAndProjectId(mentorUserId, projectId);
+        verify(projectService, times(1)).getProjectById(projectId);
+        verify(teamService, times(1)).save(any(Team.class));
+        verify(internshipRepository, times(1)).save(any(Internship.class));
     }
 
     @Test
@@ -105,6 +176,15 @@ class InternshipServiceTest {
         updateInternshipValidTest(true);
     }
 
+    @Test
+    void updateNotExistingInternshipTest() {
+        long internshipId = 1L;
+        InternshipUpdateDto updateDto = new InternshipUpdateDto();
+        when(internshipRepository.findById(internshipId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception = assertThrows(EntityNotFoundException.class, () -> internshipService.updateInternship(internshipId, updateDto));
+        assertEquals("Entity %s with ID %s not found".formatted(INTERNSHIP, internshipId), exception.getMessage());
+    }
 
     @Test
     void getFilteredInternshipsEmptyFilterTest() {
@@ -233,6 +313,18 @@ class InternshipServiceTest {
     }
 
     @Test
+    void getInternshipByIdNotExistingInternshipTest() {
+        Long internshipId = 5L;
+        when(internshipRepository.findById(internshipId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception =
+                assertThrows(EntityNotFoundException.class, () -> internshipService.getInternshipById(internshipId));
+
+        verify(internshipRepository, times(1)).findById(internshipId);
+        assertEquals("Entity %s with ID %s not found".formatted(INTERNSHIP, internshipId), exception.getMessage());
+    }
+
+    @Test
     void removeInternsFromInternshipValidTest() {
         Long firstInternUserId = 1L;
         TeamMember firstIntern = new TeamMember();
@@ -261,6 +353,17 @@ class InternshipServiceTest {
         verify(teamMemberService, times(1)).deleteAll(List.of(secondIntern));
     }
 
+    @Test
+    void removeInternsFromNotExistingInternshipTest() {
+        Long internshipId = 5L;
+        when(internshipRepository.findById(internshipId)).thenReturn(Optional.empty());
+
+        EntityNotFoundException exception =
+                assertThrows(EntityNotFoundException.class, () -> internshipService.removeInternsFromInternship(internshipId, List.of()));
+
+        verify(internshipRepository, times(1)).findById(internshipId);
+        assertEquals("Entity %s with ID %s not found".formatted(INTERNSHIP, internshipId), exception.getMessage());
+    }
 
     private void updateInternshipValidTest(boolean isAfterEndDate) {
         long internshipId = 10L;
@@ -329,7 +432,7 @@ class InternshipServiceTest {
         mentor.setRoles(List.of(mentorTeamRole));
 
         Internship internship = new Internship();
-        internship.setMentorId(mentor);
+        internship.setMentor(mentor);
         internship.setStatus(internshipStatus);
         internship.setInterns(Collections.emptyList());
         return internship;

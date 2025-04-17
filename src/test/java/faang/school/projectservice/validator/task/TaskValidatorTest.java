@@ -1,7 +1,6 @@
-package faang.school.projectservice.validation.task;
+package faang.school.projectservice.validator.task;
 
-import faang.school.projectservice.exception.customexception.DataValidationException;
-import faang.school.projectservice.validator.task.TaskValidator;
+import faang.school.projectservice.exception.DataValidationException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
